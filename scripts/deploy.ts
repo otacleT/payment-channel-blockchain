@@ -1,27 +1,36 @@
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  await run("compile");
 
-  const lockedAmount = ethers.parseEther("0.001");
+  const [deployer] = await ethers.getSigners();
 
-  const lock = await ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  // SecretRegistryのデプロイ
+  const secretRegistry = await ethers.deployContract("SecretRegistry");
+  await secretRegistry.waitForDeployment();
 
-  await lock.waitForDeployment();
+  const secretRegistryAddress = await secretRegistry.getAddress();
+  console.log("SecretRegistry deployed to:", secretRegistryAddress);
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
+  // TokenNetworkRegistryのデプロイ
+  // _settle_timeoutや_max_token_networksなど、TokenNetworkRegistryのパラメータを適切に設定してください。
+  const _settle_timeout = 500;
+  const _max_token_networks = 50;
+
+  const tokenNetworkRegistry = await ethers.deployContract(
+    "TokenNetworkRegistry",
+    [secretRegistry.getAddress(), _settle_timeout, _max_token_networks],
+    deployer
   );
+  await tokenNetworkRegistry.waitForDeployment();
+  const tokenNetworkRegistryAddress = await tokenNetworkRegistry.getAddress();
+
+  console.log("TokenNetworkRegistry deployed to:", tokenNetworkRegistryAddress);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
