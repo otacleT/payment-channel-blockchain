@@ -10,12 +10,16 @@ import "contracts/Utils.sol";
 import "contracts/SecretRegistry.sol";
 import "contracts/Controllable.sol";
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 /// @title TokenNetwork
 /// @notice Stores and manages all the Raiden Network channels that use the
 /// token specified in this TokenNetwork contract.
 contract TokenNetwork is Utils, Controllable {
     // Instance of the token used by the channels
     IToken public token;
+
+    using ECDSA for bytes32;
 
     // Instance of SecretRegistry used for storing secrets revealed in a
     // mediating transfer.
@@ -1739,7 +1743,9 @@ contract TokenNetwork is Utils, Controllable {
             )
         );
 
-        signature_address = ECVerify.ecverify(message_hash, signature);
+        signature_address = message_hash.toEthSignedMessageHash().recover(
+            signature
+        );
     }
 
     function getMaxPossibleReceivableAmount(
