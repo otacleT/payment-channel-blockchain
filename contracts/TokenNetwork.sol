@@ -3,7 +3,6 @@
 pragma solidity 0.8.10;
 pragma abicoder v2;
 
-import "contracts/lib/ECVerify.sol";
 import "contracts/lib/MessageType.sol";
 import "contracts/interfaces/IToken.sol";
 import "contracts/Utils.sol";
@@ -1684,7 +1683,9 @@ contract TokenNetwork is Utils, Controllable {
             )
         );
 
-        signature_address = ECVerify.ecverify(message_hash, signature);
+        signature_address = message_hash.toEthSignedMessageHash().recover(
+            signature
+        );
     }
 
     function recoverAddressFromBalanceProofCounterSignature(
@@ -1713,8 +1714,7 @@ contract TokenNetwork is Utils, Controllable {
             )
         );
 
-        signature_address = ECVerify.ecverify(
-            message_hash,
+        signature_address = message_hash.toEthSignedMessageHash().recover(
             non_closing_signature
         );
     }
